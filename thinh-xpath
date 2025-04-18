@@ -1,0 +1,56 @@
+@ -0,0 +1,55 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+import time
+
+# Thiết lập tùy chọn cho Chrome
+options = Options()
+options.add_argument("--headless")  # Chạy ẩn trình duyệt nếu muốn
+
+# Đường dẫn đến ChromeDriver
+service = Service(executable_path="path/to/chromedriver")  # ← Sửa path tại đây
+
+# Khởi tạo trình duyệt
+driver = webdriver.Chrome(service=service, options=options)
+
+# Truy cập trang web
+driver.get("https://www.fahasa.com/")
+
+# Chờ một chút để trang tải (tuỳ thuộc tốc độ mạng)
+time.sleep(5)
+
+# Tìm tất cả các phần tử tiêu đề tin tức nếu có (ví dụ trong section "Tin tức Fahasa")
+try:
+    # Giả sử title nằm trong class nào đó như 'title-news' hoặc phần heading trong section tin tức
+    titles = driver.find_elements(By.XPATH, '//div[contains(@class, "fhs-news-title") or contains(@class, "title-news")]')
+
+    print("Các tiêu đề tin tức và XPath tương ứng:")
+    for index, title in enumerate(titles):
+        print(f"{index+1}. {title.text}")
+        print("   XPath:", driver.execute_script(
+            """
+            function getXPath(element) {
+                if (element.id !== '')
+                    return 'id(\"' + element.id + '\")';
+                if (element === document.body)
+                    return element.tagName;
+                let ix = 0;
+                let siblings = element.parentNode.childNodes;
+                for (let i=0; i<siblings.length; i++) {
+                    let sibling = siblings[i];
+                    if (sibling === element)
+                        return getXPath(element.parentNode)+'/'+element.tagName+'['+(ix+1)+']';
+                    if (sibling.nodeType === 1 && sibling.tagName === element.tagName)
+                        ix++;
+                }
+            }
+            return getXPath(arguments[0]);
+            """, title))
+
+except Exception as e:
+    print("Không tìm thấy tiêu đề tin tức hoặc lỗi:", e)
+
+# Đóng trình duyệt
+driver.quit()
